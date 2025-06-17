@@ -8,38 +8,38 @@
     <!-- Barra lateral / Navbar -->
     <div class="sidebar" :class="{ active: sidebarActive }">
       <div class="logo-container">
-        <a href="#" class="logo">
+        <router-link to="/" class="logo">
           <i class="fas fa-tasks"></i>
           <span>SmartTask</span>
-        </a>
+        </router-link>
       </div>
       
       <div class="nav-links">
         <div class="nav-top">
-          <a href="#" class="nav-link" :class="{ active: activeTab === 'inicio' }" @click.prevent="setActiveTab('inicio')">
+          <router-link to="/" class="nav-link" :class="{ active: $route.path === '/' }">
             <i class="fas fa-home"></i>
             <span>Inicio</span>
-          </a>
-          <a href="#" class="nav-link" :class="{ active: activeTab === 'tareas' }" @click.prevent="setActiveTab('tareas')">
+          </router-link>
+          <router-link to="/tareas" class="nav-link" :class="{ active: $route.path === '/tareas' }">
             <i class="fas fa-check-circle"></i>
             <span>Tareas</span>
-          </a>
-          <a href="#" class="nav-link" :class="{ active: activeTab === 'proyectos' }" @click.prevent="setActiveTab('proyectos')">
+          </router-link>
+          <router-link to="/proyectos" class="nav-link" :class="{ active: $route.path === '/proyectos' }">
             <i class="fas fa-project-diagram"></i>
             <span>Proyectos</span>
-          </a>
-          <a href="#" class="nav-link" :class="{ active: activeTab === 'equipo' }" @click.prevent="setActiveTab('equipo')">
+          </router-link>
+          <router-link to="/equipo" class="nav-link" :class="{ active: $route.path === '/equipo' }">
             <i class="fas fa-users"></i>
             <span>Equipo</span>
-          </a>
-          <a href="#" class="nav-link" :class="{ active: activeTab === 'calendario' }" @click.prevent="setActiveTab('calendario')">
+          </router-link>
+          <router-link to="/calendario" class="nav-link" :class="{ active: $route.path === '/calendario' }">
             <i class="fas fa-calendar-alt"></i>
             <span>Calendario</span>
-          </a>
-          <a href="#" class="nav-link" :class="{ active: activeTab === 'ajustes' }" @click.prevent="setActiveTab('ajustes')">
+          </router-link>
+          <router-link to="/ajustes" class="nav-link" :class="{ active: $route.path === '/ajustes' }">
             <i class="fas fa-cog"></i>
             <span>Ajustes</span>
-          </a>
+          </router-link>
         </div>
         
         <!-- Botón de cerrar sesión -->
@@ -74,67 +74,8 @@
           {{ statusMessage }}
         </div>
         
-        <WelcomeBanner :userName="userName" />
-        
-        <div class="stats-container">
-          <StatCard 
-            v-for="stat in stats" 
-            :key="stat.title"
-            :icon="stat.icon"
-            :value="stat.value"
-            :title="stat.title"
-          />
-        </div>
-        
-        <div class="content-section">
-          <div class="section-header">
-            <h2 class="section-title">Tareas Prioritarias</h2>
-          </div>
-          
-          <div class="priority-section">
-            <PriorityCard
-              title="Urgentes"
-              icon="fas fa-exclamation-circle"
-              :items="urgentTasks"
-            />
-            
-            <PriorityCard
-              title="Próximas"
-              icon="fas fa-clock"
-              :items="upcomingTasks"
-            />
-          </div>
-        </div>
-        
-        <div class="content-section">
-          <div class="section-header">
-            <h2 class="section-title">Proyectos Recientes</h2>
-            <div class="section-actions">
-              <a href="#" class="register-btn">
-                <i class="fas fa-plus"></i>
-                Nuevo Proyecto
-              </a>
-              <a href="#" class="section-action">
-                Ver todos
-                <i class="fas fa-arrow-right"></i>
-              </a>
-            </div>
-          </div>
-          
-          <div class="recent-jobs">
-            <JobCard
-              v-for="project in recentProjects"
-              :key="project.id"
-              :id="project.id"
-              :date="project.date"
-              :name="project.name"
-              :leader="project.leader"
-              :tasks="project.tasks"
-              :deadline="project.deadline"
-              :progress="project.progress"
-            />
-          </div>
-        </div>
+        <!-- Router view para las vistas anidadas -->
+        <router-view></router-view>
       </div>
     </div>
   </div>
@@ -142,16 +83,16 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import PriorityCard from '../components/PriorityCard.vue'
 import JobCard from '../components/JobCard.vue'
 import StatCard from '../components/StatCard.vue'
 import WelcomeBanner from '../components/WelcomeBanner.vue'
 import SearchBar from '../components/SearchBar.vue'
 
+const router = useRouter()
 const sidebarActive = ref(false)
-const activeTab = ref('inicio')
 const notificationCount = ref(3)
-const userName = ref('Cristofer')
 const userInitial = ref('C')
 const statusMessage = ref('')
 const statusClass = ref('')
@@ -187,20 +128,13 @@ const toggleSidebar = () => {
   sidebarActive.value = !sidebarActive.value
 }
 
-const setActiveTab = (tab) => {
-  activeTab.value = tab
-  if (window.innerWidth < 576) {
-    sidebarActive.value = false
-  }
-}
-
 const logout = () => {
   statusMessage.value = 'Sesión cerrada exitosamente. Redirigiendo...'
   statusClass.value = 'success'
   
   setTimeout(() => {
     statusMessage.value = ''
-    alert('Redirigiendo a página de login')
+    router.push('/login')
   }, 1500)
 }
 
@@ -235,10 +169,12 @@ body {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  transition: all 0.3s;
+  transition: all 0.3s ease;
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
   z-index: 100;
   position: fixed;
+  left: 0;
+  top: 0;
 }
 
 .logo-container {
@@ -324,11 +260,11 @@ body {
 
 /* Contenido principal */
 .main-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  background: #f5f7fa;
   margin-left: 250px;
+  flex: 1;
+  min-height: 100vh;
+  background: #f5f7fa;
+  transition: all 0.3s ease;
 }
 
 .topbar {
@@ -496,7 +432,43 @@ body {
   border: 1px solid #f5c6cb;
 }
 
-/* Responsive */
+/* Menú toggle para móviles */
+.menu-toggle {
+  display: none;
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 1000;
+  background: #2c3e50;
+  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* Media queries para dispositivos móviles */
+@media (max-width: 768px) {
+  .menu-toggle {
+    display: flex;
+  }
+
+  .sidebar {
+    transform: translateX(-100%);
+  }
+
+  .sidebar.active {
+    transform: translateX(0);
+  }
+
+  .main-content {
+    margin-left: 0;
+  }
+}
+
 @media (max-width: 992px) {
   .sidebar {
     width: 70px;
@@ -523,16 +495,6 @@ body {
   
   .main-content {
     margin-left: 70px;
-  }
-}
-
-@media (max-width: 768px) {
-  .stats-container {
-    grid-template-columns: 1fr;
-  }
-  
-  .priority-section {
-    grid-template-columns: 1fr;
   }
 }
 
