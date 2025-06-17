@@ -4,25 +4,23 @@ import { ref } from 'vue'
 const projects = ref([
   {
     id: 1,
-    name: 'SmartTask v2',
-    description: 'Rediseño y mejora de la plataforma de gestión de tareas',
+    name: 'Rediseño de Sitio Web',
+    description: 'Actualización completa del sitio web corporativo',
     status: 'en progreso',
-    progress: 65,
-    startDate: '2024-02-01',
-    endDate: '2024-04-30',
-    leader: 'Juan Pérez',
-    team: ['María García', 'Carlos López', 'Ana Martínez']
+    startDate: '2024-03-01',
+    endDate: '2024-06-30',
+    leader: 'Ana Martínez',
+    progress: 35
   },
   {
     id: 2,
-    name: 'Portal de Clientes',
-    description: 'Desarrollo de portal web para gestión de clientes',
+    name: 'App Móvil',
+    description: 'Desarrollo de aplicación móvil para clientes',
     status: 'planificado',
-    progress: 0,
     startDate: '2024-04-01',
-    endDate: '2024-06-30',
-    leader: 'María García',
-    team: ['Juan Pérez', 'Carlos López']
+    endDate: '2024-08-31',
+    leader: 'Carlos Rodríguez',
+    progress: 0
   }
 ])
 
@@ -32,6 +30,18 @@ const filters = ref({
 })
 
 const showNewProjectModal = ref(false)
+const showEditProjectModal = ref(false)
+const selectedProject = ref(null)
+
+const newProject = ref({
+  name: '',
+  description: '',
+  status: 'planificado',
+  startDate: '',
+  endDate: '',
+  leader: '',
+  progress: 0
+})
 
 const handleFilterChange = (type, value) => {
   filters.value[type] = value
@@ -39,6 +49,48 @@ const handleFilterChange = (type, value) => {
 
 const handleSearch = (value) => {
   filters.value.search = value
+}
+
+const createNewProject = () => {
+  const project = {
+    id: projects.value.length + 1,
+    ...newProject.value
+  }
+  projects.value.push(project)
+  showNewProjectModal.value = false
+  resetNewProjectForm()
+}
+
+const resetNewProjectForm = () => {
+  newProject.value = {
+    name: '',
+    description: '',
+    status: 'planificado',
+    startDate: '',
+    endDate: '',
+    leader: '',
+    progress: 0
+  }
+}
+
+const editProject = (project) => {
+  selectedProject.value = { ...project }
+  showEditProjectModal.value = true
+}
+
+const updateProject = () => {
+  const index = projects.value.findIndex(p => p.id === selectedProject.value.id)
+  if (index !== -1) {
+    projects.value[index] = { ...selectedProject.value }
+  }
+  showEditProjectModal.value = false
+  selectedProject.value = null
+}
+
+const deleteProject = (projectId) => {
+  if (confirm('¿Estás seguro de que deseas eliminar este proyecto?')) {
+    projects.value = projects.value.filter(p => p.id !== projectId)
+  }
 }
 </script>
 
@@ -60,6 +112,7 @@ const handleSearch = (value) => {
           <option value="planificado">Planificado</option>
           <option value="en progreso">En Progreso</option>
           <option value="completado">Completado</option>
+          <option value="suspendido">Suspendido</option>
         </select>
       </div>
 
@@ -80,58 +133,233 @@ const handleSearch = (value) => {
           <h3>{{ project.name }}</h3>
           <span :class="['status-badge', project.status]">{{ project.status }}</span>
         </div>
-        
         <p class="project-description">{{ project.description }}</p>
-        
-        <div class="progress-bar">
-          <div class="progress" :style="{ width: `${project.progress}%` }"></div>
-          <span class="progress-text">{{ project.progress }}%</span>
-        </div>
-        
         <div class="project-details">
           <div class="detail">
             <i class="fas fa-calendar"></i>
-            <div class="detail-info">
-              <span class="detail-label">Inicio</span>
-              <span class="detail-value">{{ project.startDate }}</span>
-            </div>
+            <span>{{ project.startDate }} - {{ project.endDate }}</span>
           </div>
           <div class="detail">
-            <i class="fas fa-calendar-check"></i>
-            <div class="detail-info">
-              <span class="detail-label">Fin</span>
-              <span class="detail-value">{{ project.endDate }}</span>
-            </div>
+            <i class="fas fa-user"></i>
+            <span>{{ project.leader }}</span>
           </div>
-          <div class="detail">
-            <i class="fas fa-user-tie"></i>
-            <div class="detail-info">
-              <span class="detail-label">Líder</span>
-              <span class="detail-value">{{ project.leader }}</span>
-            </div>
+          <div class="progress-bar">
+            <div class="progress" :style="{ width: project.progress + '%' }"></div>
+            <span>{{ project.progress }}%</span>
           </div>
         </div>
-        
-        <div class="team-section">
-          <h4>Equipo</h4>
-          <div class="team-members">
-            <div v-for="member in project.team" :key="member" class="team-member">
-              <i class="fas fa-user"></i>
-              <span>{{ member }}</span>
-            </div>
-          </div>
-        </div>
-        
         <div class="project-actions">
-          <button class="action-btn view">
-            <i class="fas fa-eye"></i>
-            Ver Detalles
-          </button>
-          <button class="action-btn edit">
+          <button class="action-btn edit" @click="editProject(project)">
             <i class="fas fa-edit"></i>
-            Editar
+          </button>
+          <button class="action-btn delete" @click="deleteProject(project.id)">
+            <i class="fas fa-trash"></i>
           </button>
         </div>
+      </div>
+    </div>
+
+    <!-- Modal de Nuevo Proyecto -->
+    <div v-if="showNewProjectModal" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Crear Nuevo Proyecto</h2>
+          <button class="close-btn" @click="showNewProjectModal = false">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        
+        <form @submit.prevent="createNewProject" class="project-form">
+          <div class="form-group">
+            <label for="name">Nombre del Proyecto</label>
+            <input 
+              type="text" 
+              id="name" 
+              v-model="newProject.name" 
+              required
+              placeholder="Ingrese el nombre del proyecto"
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="description">Descripción</label>
+            <textarea 
+              id="description" 
+              v-model="newProject.description" 
+              required
+              placeholder="Ingrese la descripción del proyecto"
+              rows="3"
+            ></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="status">Estado</label>
+              <select id="status" v-model="newProject.status" required>
+                <option value="planificado">Planificado</option>
+                <option value="en progreso">En Progreso</option>
+                <option value="completado">Completado</option>
+                <option value="suspendido">Suspendido</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="progress">Progreso (%)</label>
+              <input 
+                type="number" 
+                id="progress" 
+                v-model="newProject.progress" 
+                min="0" 
+                max="100" 
+                required
+              >
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="startDate">Fecha de Inicio</label>
+              <input 
+                type="date" 
+                id="startDate" 
+                v-model="newProject.startDate" 
+                required
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="endDate">Fecha de Fin</label>
+              <input 
+                type="date" 
+                id="endDate" 
+                v-model="newProject.endDate" 
+                required
+              >
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="leader">Líder del Proyecto</label>
+            <input 
+              type="text" 
+              id="leader" 
+              v-model="newProject.leader" 
+              required
+              placeholder="Nombre del líder del proyecto"
+            >
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="cancel-btn" @click="showNewProjectModal = false">
+              Cancelar
+            </button>
+            <button type="submit" class="submit-btn">
+              Crear Proyecto
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal de Edición -->
+    <div v-if="showEditProjectModal && selectedProject" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Editar Proyecto</h2>
+          <button class="close-btn" @click="showEditProjectModal = false">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        
+        <form @submit.prevent="updateProject" class="project-form">
+          <div class="form-group">
+            <label for="edit-name">Nombre del Proyecto</label>
+            <input 
+              type="text" 
+              id="edit-name" 
+              v-model="selectedProject.name" 
+              required
+              placeholder="Ingrese el nombre del proyecto"
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="edit-description">Descripción</label>
+            <textarea 
+              id="edit-description" 
+              v-model="selectedProject.description" 
+              required
+              placeholder="Ingrese la descripción del proyecto"
+              rows="3"
+            ></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="edit-status">Estado</label>
+              <select id="edit-status" v-model="selectedProject.status" required>
+                <option value="planificado">Planificado</option>
+                <option value="en progreso">En Progreso</option>
+                <option value="completado">Completado</option>
+                <option value="suspendido">Suspendido</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="edit-progress">Progreso (%)</label>
+              <input 
+                type="number" 
+                id="edit-progress" 
+                v-model="selectedProject.progress" 
+                min="0" 
+                max="100" 
+                required
+              >
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="edit-startDate">Fecha de Inicio</label>
+              <input 
+                type="date" 
+                id="edit-startDate" 
+                v-model="selectedProject.startDate" 
+                required
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="edit-endDate">Fecha de Fin</label>
+              <input 
+                type="date" 
+                id="edit-endDate" 
+                v-model="selectedProject.endDate" 
+                required
+              >
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="edit-leader">Líder del Proyecto</label>
+            <input 
+              type="text" 
+              id="edit-leader" 
+              v-model="selectedProject.leader" 
+              required
+              placeholder="Nombre del líder del proyecto"
+            >
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="cancel-btn" @click="showEditProjectModal = false">
+              Cancelar
+            </button>
+            <button type="submit" class="submit-btn">
+              Guardar Cambios
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
@@ -222,7 +450,7 @@ const handleSearch = (value) => {
 
 .projects-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 20px;
 }
 
@@ -274,28 +502,50 @@ const handleSearch = (value) => {
   color: #2e7d32;
 }
 
+.status-badge.suspendido {
+  background: #ffebee;
+  color: #c62828;
+}
+
 .project-description {
   color: #666;
   margin-bottom: 15px;
-  font-size: 14px;
+  line-height: 1.4;
+}
+
+.project-details {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.detail {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #666;
+}
+
+.detail i {
+  color: #999;
 }
 
 .progress-bar {
-  height: 8px;
   background: #f5f5f5;
   border-radius: 4px;
-  margin-bottom: 15px;
+  height: 8px;
   position: relative;
+  margin-top: 5px;
 }
 
 .progress {
-  height: 100%;
   background: #4CAF50;
   border-radius: 4px;
+  height: 100%;
   transition: width 0.3s ease;
 }
 
-.progress-text {
+.progress-bar span {
   position: absolute;
   right: 0;
   top: -20px;
@@ -303,119 +553,140 @@ const handleSearch = (value) => {
   color: #666;
 }
 
-.project-details {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 15px;
-  margin-bottom: 20px;
-}
-
-.detail {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.detail i {
-  color: #666;
-  font-size: 16px;
-}
-
-.detail-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.detail-label {
-  font-size: 12px;
-  color: #999;
-}
-
-.detail-value {
-  font-size: 14px;
-  color: #2c3e50;
-  font-weight: 500;
-}
-
-.team-section {
-  margin-bottom: 20px;
-}
-
-.team-section h4 {
-  font-size: 14px;
-  color: #666;
-  margin-bottom: 10px;
-}
-
-.team-members {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.team-member {
-  background: #f5f5f5;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  color: #666;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.team-member i {
-  font-size: 10px;
-}
-
 .project-actions {
   display: flex;
-  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 15px;
 }
 
 .action-btn {
-  flex: 1;
   padding: 8px;
   border: none;
   border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
   cursor: pointer;
   transition: all 0.3s;
-  font-size: 14px;
-}
-
-.action-btn.view {
-  background: #e3f2fd;
-  color: #1976d2;
 }
 
 .action-btn.edit {
-  background: #fff3e0;
-  color: #ef6c00;
+  background: #2196F3;
+  color: white;
+  margin-right: 8px;
+}
+
+.action-btn.delete {
+  background: #f44336;
+  color: white;
 }
 
 .action-btn:hover {
+  opacity: 0.8;
   transform: translateY(-2px);
 }
 
-@media (max-width: 768px) {
-  .projects-filters {
-    flex-direction: column;
-  }
-  
-  .search-group {
-    width: 100%;
-  }
-  
-  .projects-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .project-details {
-    grid-template-columns: 1fr;
-  }
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.modal-header h2 {
+  margin: 0;
+  color: #2c3e50;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #666;
+}
+
+.project-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.form-group label {
+  font-weight: 500;
+  color: #2c3e50;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.form-group textarea {
+  resize: vertical;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.cancel-btn {
+  padding: 10px 20px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+}
+
+.submit-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  background: #4CAF50;
+  color: white;
+  cursor: pointer;
+}
+
+.submit-btn:hover {
+  background: #45a049;
 }
 </style> 

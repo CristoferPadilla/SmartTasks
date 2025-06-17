@@ -29,6 +29,17 @@ const filters = ref({
 })
 
 const showNewTaskModal = ref(false)
+const showEditTaskModal = ref(false)
+const selectedTask = ref(null)
+
+const newTask = ref({
+  title: '',
+  description: '',
+  status: 'pendiente',
+  priority: 'media',
+  dueDate: '',
+  assignee: ''
+})
 
 const handleFilterChange = (type, value) => {
   filters.value[type] = value
@@ -36,6 +47,47 @@ const handleFilterChange = (type, value) => {
 
 const handleSearch = (value) => {
   filters.value.search = value
+}
+
+const createNewTask = () => {
+  const task = {
+    id: tasks.value.length + 1,
+    ...newTask.value
+  }
+  tasks.value.push(task)
+  showNewTaskModal.value = false
+  resetNewTaskForm()
+}
+
+const resetNewTaskForm = () => {
+  newTask.value = {
+    title: '',
+    description: '',
+    status: 'pendiente',
+    priority: 'media',
+    dueDate: '',
+    assignee: ''
+  }
+}
+
+const editTask = (task) => {
+  selectedTask.value = { ...task }
+  showEditTaskModal.value = true
+}
+
+const updateTask = () => {
+  const index = tasks.value.findIndex(t => t.id === selectedTask.value.id)
+  if (index !== -1) {
+    tasks.value[index] = { ...selectedTask.value }
+  }
+  showEditTaskModal.value = false
+  selectedTask.value = null
+}
+
+const deleteTask = (taskId) => {
+  if (confirm('¿Estás seguro de que deseas eliminar esta tarea?')) {
+    tasks.value = tasks.value.filter(t => t.id !== taskId)
+  }
 }
 </script>
 
@@ -103,13 +155,189 @@ const handleSearch = (value) => {
           </div>
         </div>
         <div class="task-actions">
-          <button class="action-btn edit">
+          <button class="action-btn edit" @click="editTask(task)">
             <i class="fas fa-edit"></i>
           </button>
-          <button class="action-btn delete">
+          <button class="action-btn delete" @click="deleteTask(task.id)">
             <i class="fas fa-trash"></i>
           </button>
         </div>
+      </div>
+    </div>
+
+    <!-- Modal de Nueva Tarea -->
+    <div v-if="showNewTaskModal" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Crear Nueva Tarea</h2>
+          <button class="close-btn" @click="showNewTaskModal = false">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        
+        <form @submit.prevent="createNewTask" class="task-form">
+          <div class="form-group">
+            <label for="title">Título</label>
+            <input 
+              type="text" 
+              id="title" 
+              v-model="newTask.title" 
+              required
+              placeholder="Ingrese el título de la tarea"
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="description">Descripción</label>
+            <textarea 
+              id="description" 
+              v-model="newTask.description" 
+              required
+              placeholder="Ingrese la descripción de la tarea"
+              rows="3"
+            ></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="status">Estado</label>
+              <select id="status" v-model="newTask.status" required>
+                <option value="pendiente">Pendiente</option>
+                <option value="en progreso">En Progreso</option>
+                <option value="completada">Completada</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="priority">Prioridad</label>
+              <select id="priority" v-model="newTask.priority" required>
+                <option value="alta">Alta</option>
+                <option value="media">Media</option>
+                <option value="baja">Baja</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="dueDate">Fecha de Vencimiento</label>
+              <input 
+                type="date" 
+                id="dueDate" 
+                v-model="newTask.dueDate" 
+                required
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="assignee">Asignado a</label>
+              <input 
+                type="text" 
+                id="assignee" 
+                v-model="newTask.assignee" 
+                required
+                placeholder="Nombre del responsable"
+              >
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="cancel-btn" @click="showNewTaskModal = false">
+              Cancelar
+            </button>
+            <button type="submit" class="submit-btn">
+              Crear Tarea
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal de Edición -->
+    <div v-if="showEditTaskModal && selectedTask" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Editar Tarea</h2>
+          <button class="close-btn" @click="showEditTaskModal = false">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        
+        <form @submit.prevent="updateTask" class="task-form">
+          <div class="form-group">
+            <label for="edit-title">Título</label>
+            <input 
+              type="text" 
+              id="edit-title" 
+              v-model="selectedTask.title" 
+              required
+              placeholder="Ingrese el título de la tarea"
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="edit-description">Descripción</label>
+            <textarea 
+              id="edit-description" 
+              v-model="selectedTask.description" 
+              required
+              placeholder="Ingrese la descripción de la tarea"
+              rows="3"
+            ></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="edit-status">Estado</label>
+              <select id="edit-status" v-model="selectedTask.status" required>
+                <option value="pendiente">Pendiente</option>
+                <option value="en progreso">En Progreso</option>
+                <option value="completada">Completada</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="edit-priority">Prioridad</label>
+              <select id="edit-priority" v-model="selectedTask.priority" required>
+                <option value="alta">Alta</option>
+                <option value="media">Media</option>
+                <option value="baja">Baja</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="edit-dueDate">Fecha de Vencimiento</label>
+              <input 
+                type="date" 
+                id="edit-dueDate" 
+                v-model="selectedTask.dueDate" 
+                required
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="edit-assignee">Asignado a</label>
+              <input 
+                type="text" 
+                id="edit-assignee" 
+                v-model="selectedTask.assignee" 
+                required
+                placeholder="Nombre del responsable"
+              >
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="cancel-btn" @click="showEditTaskModal = false">
+              Cancelar
+            </button>
+            <button type="submit" class="submit-btn">
+              Guardar Cambios
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
@@ -280,33 +508,31 @@ const handleSearch = (value) => {
 
 .task-actions {
   display: flex;
-  gap: 10px;
   justify-content: flex-end;
+  margin-top: 15px;
 }
 
 .action-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 4px;
+  padding: 8px;
   border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  border-radius: 4px;
   cursor: pointer;
   transition: all 0.3s;
 }
 
 .action-btn.edit {
-  background: #e3f2fd;
-  color: #1976d2;
+  background: #2196F3;
+  color: white;
+  margin-right: 8px;
 }
 
 .action-btn.delete {
-  background: #ffebee;
-  color: #c62828;
+  background: #f44336;
+  color: white;
 }
 
 .action-btn:hover {
+  opacity: 0.8;
   transform: translateY(-2px);
 }
 
@@ -322,5 +548,112 @@ const handleSearch = (value) => {
   .tasks-grid {
     grid-template-columns: 1fr;
   }
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.modal-header h2 {
+  margin: 0;
+  color: #2c3e50;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #666;
+}
+
+.task-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.form-group label {
+  font-weight: 500;
+  color: #2c3e50;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.form-group textarea {
+  resize: vertical;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.cancel-btn {
+  padding: 10px 20px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+}
+
+.submit-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  background: #4CAF50;
+  color: white;
+  cursor: pointer;
+}
+
+.submit-btn:hover {
+  background: #45a049;
 }
 </style> 

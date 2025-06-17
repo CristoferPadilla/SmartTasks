@@ -4,35 +4,45 @@ import { ref } from 'vue'
 const teamMembers = ref([
   {
     id: 1,
-    name: 'Juan Pérez',
-    role: 'Desarrollador Frontend',
-    email: 'juan.perez@smarttask.com',
-    phone: '+34 123 456 789',
-    avatar: 'https://i.pravatar.cc/150?img=1',
-    status: 'disponible',
-    skills: ['Vue.js', 'React', 'TypeScript'],
-    projects: ['SmartTask v2', 'Portal Clientes']
+    name: 'Ana Martínez',
+    role: 'Project Manager',
+    email: 'ana.martinez@empresa.com',
+    phone: '+34 612 345 678',
+    department: 'Gestión',
+    status: 'activo',
+    joinDate: '2023-01-15'
   },
   {
     id: 2,
-    name: 'María García',
-    role: 'Diseñadora UI/UX',
-    email: 'maria.garcia@smarttask.com',
-    phone: '+34 987 654 321',
-    avatar: 'https://i.pravatar.cc/150?img=2',
-    status: 'ocupado',
-    skills: ['Figma', 'Adobe XD', 'UI Design'],
-    projects: ['SmartTask v2']
+    name: 'Carlos Rodríguez',
+    role: 'Desarrollador Senior',
+    email: 'carlos.rodriguez@empresa.com',
+    phone: '+34 623 456 789',
+    department: 'Desarrollo',
+    status: 'activo',
+    joinDate: '2023-03-20'
   }
 ])
 
 const filters = ref({
-  role: 'todos',
+  department: 'todos',
   status: 'todos',
   search: ''
 })
 
 const showNewMemberModal = ref(false)
+const showEditMemberModal = ref(false)
+const selectedMember = ref(null)
+
+const newMember = ref({
+  name: '',
+  role: '',
+  email: '',
+  phone: '',
+  department: '',
+  status: 'activo',
+  joinDate: ''
+})
 
 const handleFilterChange = (type, value) => {
   filters.value[type] = value
@@ -41,6 +51,48 @@ const handleFilterChange = (type, value) => {
 const handleSearch = (value) => {
   filters.value.search = value
 }
+
+const createNewMember = () => {
+  const member = {
+    id: teamMembers.value.length + 1,
+    ...newMember.value
+  }
+  teamMembers.value.push(member)
+  showNewMemberModal.value = false
+  resetNewMemberForm()
+}
+
+const resetNewMemberForm = () => {
+  newMember.value = {
+    name: '',
+    role: '',
+    email: '',
+    phone: '',
+    department: '',
+    status: 'activo',
+    joinDate: ''
+  }
+}
+
+const editMember = (member) => {
+  selectedMember.value = { ...member }
+  showEditMemberModal.value = true
+}
+
+const updateMember = () => {
+  const index = teamMembers.value.findIndex(m => m.id === selectedMember.value.id)
+  if (index !== -1) {
+    teamMembers.value[index] = { ...selectedMember.value }
+  }
+  showEditMemberModal.value = false
+  selectedMember.value = null
+}
+
+const deleteMember = (memberId) => {
+  if (confirm('¿Estás seguro de que deseas eliminar este miembro del equipo?')) {
+    teamMembers.value = teamMembers.value.filter(m => m.id !== memberId)
+  }
+}
 </script>
 
 <template>
@@ -48,19 +100,20 @@ const handleSearch = (value) => {
     <div class="team-header">
       <h1>Gestión del Equipo</h1>
       <button class="new-member-btn" @click="showNewMemberModal = true">
-        <i class="fas fa-user-plus"></i>
+        <i class="fas fa-plus"></i>
         Nuevo Miembro
       </button>
     </div>
 
     <div class="team-filters">
       <div class="filter-group">
-        <label>Rol:</label>
-        <select v-model="filters.role" @change="handleFilterChange('role', $event.target.value)">
+        <label>Departamento:</label>
+        <select v-model="filters.department" @change="handleFilterChange('department', $event.target.value)">
           <option value="todos">Todos</option>
-          <option value="desarrollador">Desarrollador</option>
-          <option value="diseñador">Diseñador</option>
-          <option value="producto">Producto</option>
+          <option value="Gestión">Gestión</option>
+          <option value="Desarrollo">Desarrollo</option>
+          <option value="Diseño">Diseño</option>
+          <option value="Marketing">Marketing</option>
         </select>
       </div>
 
@@ -68,9 +121,8 @@ const handleSearch = (value) => {
         <label>Estado:</label>
         <select v-model="filters.status" @change="handleFilterChange('status', $event.target.value)">
           <option value="todos">Todos</option>
-          <option value="disponible">Disponible</option>
-          <option value="ocupado">Ocupado</option>
-          <option value="ausente">Ausente</option>
+          <option value="activo">Activo</option>
+          <option value="inactivo">Inactivo</option>
         </select>
       </div>
 
@@ -89,54 +141,244 @@ const handleSearch = (value) => {
       <div v-for="member in teamMembers" :key="member.id" class="member-card">
         <div class="member-header">
           <div class="member-avatar">
-            <img :src="member.avatar" :alt="member.name">
-            <span :class="['status-indicator', member.status]"></span>
+            <i class="fas fa-user"></i>
           </div>
           <div class="member-info">
             <h3>{{ member.name }}</h3>
-            <p class="member-role">{{ member.role }}</p>
+            <span class="role">{{ member.role }}</span>
           </div>
+          <span :class="['status-badge', member.status]">{{ member.status }}</span>
         </div>
 
-        <div class="member-contact">
-          <div class="contact-item">
+        <div class="member-details">
+          <div class="detail">
             <i class="fas fa-envelope"></i>
             <span>{{ member.email }}</span>
           </div>
-          <div class="contact-item">
+          <div class="detail">
             <i class="fas fa-phone"></i>
             <span>{{ member.phone }}</span>
           </div>
-        </div>
-
-        <div class="member-skills">
-          <h4>Habilidades</h4>
-          <div class="skills-list">
-            <span v-for="skill in member.skills" :key="skill" class="skill-tag">
-              {{ skill }}
-            </span>
+          <div class="detail">
+            <i class="fas fa-building"></i>
+            <span>{{ member.department }}</span>
           </div>
-        </div>
-
-        <div class="member-projects">
-          <h4>Proyectos</h4>
-          <div class="projects-list">
-            <span v-for="project in member.projects" :key="project" class="project-tag">
-              {{ project }}
-            </span>
+          <div class="detail">
+            <i class="fas fa-calendar"></i>
+            <span>Ingreso: {{ member.joinDate }}</span>
           </div>
         </div>
 
         <div class="member-actions">
-          <button class="action-btn message">
-            <i class="fas fa-comment"></i>
-            Mensaje
-          </button>
-          <button class="action-btn edit">
+          <button class="action-btn edit" @click="editMember(member)">
             <i class="fas fa-edit"></i>
-            Editar
+          </button>
+          <button class="action-btn delete" @click="deleteMember(member.id)">
+            <i class="fas fa-trash"></i>
           </button>
         </div>
+      </div>
+    </div>
+
+    <!-- Modal de Nuevo Miembro -->
+    <div v-if="showNewMemberModal" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Agregar Nuevo Miembro</h2>
+          <button class="close-btn" @click="showNewMemberModal = false">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        
+        <form @submit.prevent="createNewMember" class="member-form">
+          <div class="form-group">
+            <label for="name">Nombre Completo</label>
+            <input 
+              type="text" 
+              id="name" 
+              v-model="newMember.name" 
+              required
+              placeholder="Ingrese el nombre completo"
+            >
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="role">Cargo</label>
+              <input 
+                type="text" 
+                id="role" 
+                v-model="newMember.role" 
+                required
+                placeholder="Ingrese el cargo"
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="department">Departamento</label>
+              <select id="department" v-model="newMember.department" required>
+                <option value="Gestión">Gestión</option>
+                <option value="Desarrollo">Desarrollo</option>
+                <option value="Diseño">Diseño</option>
+                <option value="Marketing">Marketing</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="email">Correo Electrónico</label>
+              <input 
+                type="email" 
+                id="email" 
+                v-model="newMember.email" 
+                required
+                placeholder="ejemplo@empresa.com"
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="phone">Teléfono</label>
+              <input 
+                type="tel" 
+                id="phone" 
+                v-model="newMember.phone" 
+                required
+                placeholder="+34 XXX XXX XXX"
+              >
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="status">Estado</label>
+              <select id="status" v-model="newMember.status" required>
+                <option value="activo">Activo</option>
+                <option value="inactivo">Inactivo</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="joinDate">Fecha de Ingreso</label>
+              <input 
+                type="date" 
+                id="joinDate" 
+                v-model="newMember.joinDate" 
+                required
+              >
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="cancel-btn" @click="showNewMemberModal = false">
+              Cancelar
+            </button>
+            <button type="submit" class="submit-btn">
+              Agregar Miembro
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal de Edición -->
+    <div v-if="showEditMemberModal && selectedMember" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Editar Miembro</h2>
+          <button class="close-btn" @click="showEditMemberModal = false">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        
+        <form @submit.prevent="updateMember" class="member-form">
+          <div class="form-group">
+            <label for="edit-name">Nombre Completo</label>
+            <input 
+              type="text" 
+              id="edit-name" 
+              v-model="selectedMember.name" 
+              required
+              placeholder="Ingrese el nombre completo"
+            >
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="edit-role">Cargo</label>
+              <input 
+                type="text" 
+                id="edit-role" 
+                v-model="selectedMember.role" 
+                required
+                placeholder="Ingrese el cargo"
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="edit-department">Departamento</label>
+              <select id="edit-department" v-model="selectedMember.department" required>
+                <option value="Gestión">Gestión</option>
+                <option value="Desarrollo">Desarrollo</option>
+                <option value="Diseño">Diseño</option>
+                <option value="Marketing">Marketing</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="edit-email">Correo Electrónico</label>
+              <input 
+                type="email" 
+                id="edit-email" 
+                v-model="selectedMember.email" 
+                required
+                placeholder="ejemplo@empresa.com"
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="edit-phone">Teléfono</label>
+              <input 
+                type="tel" 
+                id="edit-phone" 
+                v-model="selectedMember.phone" 
+                required
+                placeholder="+34 XXX XXX XXX"
+              >
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="edit-status">Estado</label>
+              <select id="edit-status" v-model="selectedMember.status" required>
+                <option value="activo">Activo</option>
+                <option value="inactivo">Inactivo</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="edit-joinDate">Fecha de Ingreso</label>
+              <input 
+                type="date" 
+                id="edit-joinDate" 
+                v-model="selectedMember.joinDate" 
+                required
+              >
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="cancel-btn" @click="showEditMemberModal = false">
+              Cancelar
+            </button>
+            <button type="submit" class="submit-btn">
+              Guardar Cambios
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
@@ -252,136 +494,196 @@ const handleSearch = (value) => {
 }
 
 .member-avatar {
-  position: relative;
-}
-
-.member-avatar img {
-  width: 60px;
-  height: 60px;
+  width: 50px;
+  height: 50px;
+  background: #e3f2fd;
   border-radius: 50%;
-  object-fit: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1976d2;
+  font-size: 20px;
 }
 
-.status-indicator {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  border: 2px solid white;
-}
-
-.status-indicator.disponible {
-  background: #4CAF50;
-}
-
-.status-indicator.ocupado {
-  background: #FFC107;
-}
-
-.status-indicator.ausente {
-  background: #F44336;
+.member-info {
+  flex: 1;
 }
 
 .member-info h3 {
+  margin: 0;
   font-size: 18px;
   color: #2c3e50;
-  margin: 0;
 }
 
-.member-role {
-  color: #666;
+.member-info .role {
   font-size: 14px;
-  margin: 5px 0 0;
+  color: #666;
 }
 
-.member-contact {
-  margin-bottom: 20px;
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
 }
 
-.contact-item {
+.status-badge.activo {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.status-badge.inactivo {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.member-details {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.detail {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   color: #666;
-  font-size: 14px;
-  margin-bottom: 8px;
 }
 
-.contact-item i {
+.detail i {
   color: #999;
   width: 16px;
 }
 
-.member-skills, .member-projects {
-  margin-bottom: 20px;
-}
-
-.member-skills h4, .member-projects h4 {
-  font-size: 14px;
-  color: #666;
-  margin-bottom: 10px;
-}
-
-.skills-list, .projects-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.skill-tag, .project-tag {
-  background: #f5f5f5;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  color: #666;
-}
-
 .member-actions {
   display: flex;
-  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 15px;
 }
 
 .action-btn {
-  flex: 1;
   padding: 8px;
   border: none;
   border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
   cursor: pointer;
   transition: all 0.3s;
-  font-size: 14px;
-}
-
-.action-btn.message {
-  background: #e3f2fd;
-  color: #1976d2;
 }
 
 .action-btn.edit {
-  background: #fff3e0;
-  color: #ef6c00;
+  background: #2196F3;
+  color: white;
+  margin-right: 8px;
+}
+
+.action-btn.delete {
+  background: #f44336;
+  color: white;
 }
 
 .action-btn:hover {
+  opacity: 0.8;
   transform: translateY(-2px);
 }
 
-@media (max-width: 768px) {
-  .team-filters {
-    flex-direction: column;
-  }
-  
-  .search-group {
-    width: 100%;
-  }
-  
-  .team-grid {
-    grid-template-columns: 1fr;
-  }
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.modal-header h2 {
+  margin: 0;
+  color: #2c3e50;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #666;
+}
+
+.member-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.form-group label {
+  font-weight: 500;
+  color: #2c3e50;
+}
+
+.form-group input,
+.form-group select {
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.cancel-btn {
+  padding: 10px 20px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+}
+
+.submit-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  background: #4CAF50;
+  color: white;
+  cursor: pointer;
+}
+
+.submit-btn:hover {
+  background: #45a049;
 }
 </style> 
